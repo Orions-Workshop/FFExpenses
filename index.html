@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Logger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --border: #2a2a2a;
+    --border-focus: #5a7fff;
+    --text: #e8e8e8;
+    --muted: #666;
+    --accent: #5a7fff;
+    --accent-dim: rgba(90,127,255,0.12);
+    --success: #3ecf8e;
+    --success-dim: rgba(62,207,142,0.1);
+    --error: #ff5a5a;
+    --error-dim: rgba(255,90,90,0.1);
+    --label: #888;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 16px 80px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .header {
+    margin-bottom: 40px;
+  }
+
+  .header-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-size: 26px;
+    font-weight: 400;
+    letter-spacing: -.02em;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .config-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .config-bar:hover { border-color: #444; }
+  .config-bar-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--error);
+    flex-shrink: 0;
+    transition: background .2s;
+  }
+  .config-bar-dot.connected { background: var(--success); }
+  .config-bar-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+  }
+  .config-bar-action {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  .url-panel {
+    display: none;
+    margin-top: 8px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .url-panel.open { display: block; }
+  .url-panel label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .url-panel input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .url-panel input:focus { border-color: var(--border-focus); }
+  .url-panel input::placeholder { color: var(--muted); }
+  .url-save {
+    margin-top: 8px;
+    padding: 7px 14px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .url-save:hover { background: rgba(90,127,255,0.2); }
+
+  .form { margin-top: 32px; }
+
+  .row { margin-bottom: 20px; }
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 7px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 300;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color .15s, background .15s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--border-focus);
+    background: #1a1a1a;
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+  select option { background: #1e1e1e; }
+  textarea { resize: none; height: 72px; line-height: 1.5; }
+
+  .amount-wrap { position: relative; }
+  .amount-wrap span {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .amount-wrap input { padding-left: 26px; font-family: var(--mono); font-size: 15px; }
+
+  .submit-row { margin-top: 28px; }
+
+  button[type="submit"] {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    padding: 14px;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    position: relative;
+    overflow: hidden;
+  }
+  button[type="submit"]:hover { opacity: .88; }
+  button[type="submit"]:active { transform: scale(.99); }
+  button[type="submit"]:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  .status {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    display: none;
+    line-height: 1.5;
+  }
+  .status.success {
+    background: var(--success-dim);
+    border: 1px solid rgba(62,207,142,0.25);
+    color: var(--success);
+    display: block;
+  }
+  .status.error {
+    background: var(--error-dim);
+    border: 1px solid rgba(255,90,90,0.2);
+    color: var(--error);
+    display: block;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+
+  .required-note {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  @media (max-width: 420px) {
+    .row-2 { grid-template-columns: 1fr; }
+    body { padding-top: 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="header-tag">Business Expenses</div>
+    <h1>Log a receipt</h1>
+
+    <div class="config-bar" onclick="toggleUrlPanel()">
+      <div class="config-bar-dot" id="dot"></div>
+      <span class="config-bar-label" id="bar-label">Web app URL not configured</span>
+      <span class="config-bar-action">configure ↓</span>
+    </div>
+    <div class="url-panel" id="url-panel">
+      <label>Google Apps Script web app URL</label>
+      <input type="url" id="webapp-url" placeholder="https://script.google.com/macros/s/…/exec">
+      <button class="url-save" onclick="saveUrl()">Save URL</button>
+    </div>
+  </div>
+
+  <form class="form" onsubmit="submitExpense(event)">
+    <div class="row-2">
+      <div>
+        <label for="date">Date *</label>
+        <input type="date" id="date" required>
+      </div>
+      <div>
+        <label for="amount">Amount *</label>
+        <div class="amount-wrap">
+          <span>$</span>
+          <input type="number" id="amount" step="0.01" min="0.01" placeholder="0.00" required>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="vendor">Vendor / Description *</label>
+      <input type="text" id="vendor" placeholder="e.g. Delta Airlines — flight to Chicago" required>
+    </div>
+
+    <div class="row-2">
+      <div>
+        <label for="category">Category</label>
+        <select id="category">
+          <option value="">— select —</option>
+          <option>Meals &amp; Entertainment</option>
+          <option>Travel</option>
+          <option>Office Supplies</option>
+          <option>Software &amp; Subscriptions</option>
+          <option>Professional Services</option>
+          <option>Marketing &amp; Advertising</option>
+          <option>Utilities</option>
+          <option>Equipment</option>
+          <option>Training &amp; Education</option>
+          <option>Vehicle &amp; Mileage</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label for="method">Payment Method</label>
+        <select id="method">
+          <option value="">— select —</option>
+          <option>Credit Card</option>
+          <option>Debit Card</option>
+          <option>Cash</option>
+          <option>Check</option>
+          <option>ACH/Wire</option>
+          <option>PayPal/Venmo</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row-2">
+      <div>
+        <label for="deductible">Tax Deductible?</label>
+        <select id="deductible">
+          <option value="">— select —</option>
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </div>
+      <div><!-- spacer --></div>
+    </div>
+
+    <div class="row">
+      <label for="notes">Notes</label>
+      <textarea id="notes" placeholder="Optional — client name, trip purpose, etc."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="submit-row">
+      <button type="submit" id="submit-btn">Log expense →</button>
+      <div class="status" id="status"></div>
+      <p class="required-note">* Required fields</p>
+    </div>
+  </form>
+</div>
+
+<script>
+const STORAGE_KEY = "expense_tracker_url";
+
+function init() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    document.getElementById("webapp-url").value = saved;
+    updateDot(true);
+  }
+  // Default date to today
+  const d = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  document.getElementById("date").value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function toggleUrlPanel() {
+  document.getElementById("url-panel").classList.toggle("open");
+}
+
+function saveUrl() {
+  const url = document.getElementById("webapp-url").value.trim();
+  if (!url) return;
+  localStorage.setItem(STORAGE_KEY, url);
+  updateDot(true);
+  document.getElementById("url-panel").classList.remove("open");
+}
+
+function updateDot(connected) {
+  const dot = document.getElementById("dot");
+  const label = document.getElementById("bar-label");
+  if (connected) {
+    dot.classList.add("connected");
+    const url = localStorage.getItem(STORAGE_KEY) || "";
+    const short = url.length > 40 ? url.slice(0, 40) + "…" : url;
+    label.textContent = short || "Web app URL configured";
+  } else {
+    dot.classList.remove("connected");
+    label.textContent = "Web app URL not configured";
+  }
+}
+
+async function submitExpense(e) {
+  e.preventDefault();
+  const url = localStorage.getItem(STORAGE_KEY);
+  const status = document.getElementById("status");
+  const btn = document.getElementById("submit-btn");
+
+  if (!url) {
+    showStatus("error", "No web app URL set. Click 'configure' above to add it.");
+    return;
+  }
+
+  // Format date as MM/DD/YYYY for the sheet
+  const rawDate = document.getElementById("date").value;
+  const [y, m, d] = rawDate.split("-");
+  const formattedDate = `${m}/${d}/${y}`;
+
+  const payload = {
+    date:       formattedDate,
+    amount:     document.getElementById("amount").value,
+    vendor:     document.getElementById("vendor").value,
+    category:   document.getElementById("category").value,
+    method:     document.getElementById("method").value,
+    deductible: document.getElementById("deductible").value,
+    notes:      document.getElementById("notes").value,
+  };
+
+  btn.disabled = true;
+  btn.textContent = "Logging…";
+  status.className = "status";
+
+  try {
+    // mode: no-cors means we can't read the response body, but the request goes through.
+    // Apps Script will still write to the sheet successfully.
+    await fetch(url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    showStatus("success", `✓ Logged: ${payload.vendor} — $${parseFloat(payload.amount).toFixed(2)}`);
+    resetForm();
+  } catch (err) {
+    showStatus("error", "Request failed. Check your URL and internet connection.\n" + err.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Log expense →";
+}
+
+function showStatus(type, msg) {
+  const el = document.getElementById("status");
+  el.className = "status " + type;
+  el.textContent = msg;
+  setTimeout(() => { el.className = "status"; }, 6000);
+}
+
+function resetForm() {
+  document.getElementById("amount").value = "";
+  document.getElementById("vendor").value = "";
+  document.getElementById("category").value = "";
+  document.getElementById("method").value = "";
+  document.getElementById("deductible").value = "";
+  document.getElementById("notes").value = "";
+  // Keep date as today
+  const d = new Date();
+  const pad = n => String(n).padStart(2,"0");
+  document.getElementById("date").value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+init();
+</script>
+</body>
+</html>
